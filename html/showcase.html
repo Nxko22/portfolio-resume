@@ -1,1 +1,180 @@
-link videos / photos here
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Workout & Nutrition Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+  <div class="max-w-3xl mx-auto bg-white shadow-lg rounded-xl p-6">
+    <h1 class="text-2xl font-bold text-center mb-4">Weekly Workout & Nutrition Tracker</h1>
+    
+    <!-- Tabs -->
+    <div class="flex mb-4 border-b">
+      <button class="tab-btn flex-1 py-2 px-4 text-center border-b-2 border-blue-500" data-tab="workouts">Workouts</button>
+      <button class="tab-btn flex-1 py-2 px-4 text-center border-b-2 border-transparent" data-tab="food">Food/Macros</button>
+      <button class="tab-btn flex-1 py-2 px-4 text-center border-b-2 border-transparent" data-tab="summary">Summary</button>
+    </div>
+
+    <!-- Workouts Tab -->
+    <div id="workouts" class="tab-content">
+      <h2 class="text-xl font-semibold mb-2">Log a Workout</h2>
+      <form id="workout-form" class="mb-4">
+        <input type="text" id="workout-user" placeholder="Your Name" class="border p-2 rounded w-full mb-2" required />
+        <input type="text" id="workout-title" placeholder="Workout Title" class="border p-2 rounded w-full mb-2" required />
+        <textarea id="workout-description" placeholder="Workout Description" class="border p-2 rounded w-full mb-2"></textarea>
+        <button class="bg-blue-500 text-white px-4 py-2 rounded">Add Workout</button>
+      </form>
+      <ul id="workout-list" class="space-y-2"></ul>
+    </div>
+
+    <!-- Food Tab -->
+    <div id="food" class="tab-content hidden">
+      <h2 class="text-xl font-semibold mb-2">Log Food & Macros</h2>
+      <form id="food-form" class="mb-4">
+        <input type="text" id="food-user" placeholder="Your Name" class="border p-2 rounded w-full mb-2" required />
+        <input type="text" id="food-item" placeholder="Food Item" class="border p-2 rounded w-full mb-2" required />
+        <input type="number" id="food-protein" placeholder="Protein (g)" class="border p-2 rounded w-full mb-2" required />
+        <input type="number" id="food-carbs" placeholder="Carbs (g)" class="border p-2 rounded w-full mb-2" required />
+        <input type="number" id="food-fat" placeholder="Fat (g)" class="border p-2 rounded w-full mb-2" required />
+        <button class="bg-green-500 text-white px-4 py-2 rounded">Add Food</button>
+      </form>
+      <ul id="food-list" class="space-y-2"></ul>
+    </div>
+
+    <!-- Summary Tab -->
+    <div id="summary" class="tab-content hidden">
+      <h2 class="text-xl font-semibold mb-2">Weekly Summary</h2>
+      <button id="reset-week" class="bg-red-500 text-white px-4 py-2 rounded mb-4">Reset Week</button>
+      <div id="summary-content"></div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('border-blue-500'));
+        tab.classList.add('border-blue-500');
+        contents.forEach(c => c.classList.add('hidden'));
+        document.getElementById(tab.dataset.tab).classList.remove('hidden');
+        updateSummary();
+      });
+    });
+
+    const workouts = JSON.parse(localStorage.getItem('workouts') || '[]');
+    const foods = JSON.parse(localStorage.getItem('foods') || '[]');
+
+    const workoutList = document.getElementById('workout-list');
+    const foodList = document.getElementById('food-list');
+
+    function renderWorkouts() {
+      workoutList.innerHTML = '';
+      workouts.forEach((w, index) => {
+        workoutList.innerHTML += `
+          <li class="p-3 bg-gray-50 rounded border">
+            <strong>${w.user}</strong> - ${w.title}
+            <p>${w.description}</p>
+            <button onclick="deleteWorkout(${index})" class="text-red-500 text-sm">Delete</button>
+          </li>`;
+      });
+    }
+
+    function renderFoods() {
+      foodList.innerHTML = '';
+      foods.forEach((f, index) => {
+        foodList.innerHTML += `
+          <li class="p-3 bg-gray-50 rounded border">
+            <strong>${f.user}</strong> - ${f.item}  
+            <p>Protein: ${f.protein}g | Carbs: ${f.carbs}g | Fat: ${f.fat}g</p>
+            <button onclick="deleteFood(${index})" class="text-red-500 text-sm">Delete</button>
+          </li>`;
+      });
+    }
+
+    document.getElementById('workout-form').addEventListener('submit', e => {
+      e.preventDefault();
+      workouts.push({
+        user: document.getElementById('workout-user').value,
+        title: document.getElementById('workout-title').value,
+        description: document.getElementById('workout-description').value
+      });
+      localStorage.setItem('workouts', JSON.stringify(workouts));
+      renderWorkouts();
+      e.target.reset();
+    });
+
+    document.getElementById('food-form').addEventListener('submit', e => {
+      e.preventDefault();
+      foods.push({
+        user: document.getElementById('food-user').value,
+        item: document.getElementById('food-item').value,
+        protein: Number(document.getElementById('food-protein').value),
+        carbs: Number(document.getElementById('food-carbs').value),
+        fat: Number(document.getElementById('food-fat').value)
+      });
+      localStorage.setItem('foods', JSON.stringify(foods));
+      renderFoods();
+      e.target.reset();
+    });
+
+    function deleteWorkout(index) {
+      workouts.splice(index, 1);
+      localStorage.setItem('workouts', JSON.stringify(workouts));
+      renderWorkouts();
+    }
+
+    function deleteFood(index) {
+      foods.splice(index, 1);
+      localStorage.setItem('foods', JSON.stringify(foods));
+      renderFoods();
+    }
+
+    function updateSummary() {
+      const summaryDiv = document.getElementById('summary-content');
+      const userStats = {};
+
+      foods.forEach(f => {
+        if (!userStats[f.user]) userStats[f.user] = { protein: 0, carbs: 0, fat: 0, workouts: 0 };
+        userStats[f.user].protein += f.protein;
+        userStats[f.user].carbs += f.carbs;
+        userStats[f.user].fat += f.fat;
+      });
+
+      workouts.forEach(w => {
+        if (!userStats[w.user]) userStats[w.user] = { protein: 0, carbs: 0, fat: 0, workouts: 0 };
+        userStats[w.user].workouts += 1;
+      });
+
+      summaryDiv.innerHTML = '';
+      for (let user in userStats) {
+        summaryDiv.innerHTML += `
+          <div class="p-3 mb-2 bg-gray-50 rounded border">
+            <strong>${user}</strong>  
+            <p>Workouts: ${userStats[user].workouts}</p>
+            <p>Protein: ${userStats[user].protein}g | Carbs: ${userStats[user].carbs}g | Fat: ${userStats[user].fat}g</p>
+          </div>`;
+      }
+    }
+
+    document.getElementById('reset-week').addEventListener('click', () => {
+      if (confirm('Reset all data for the week?')) {
+        localStorage.removeItem('workouts');
+        localStorage.removeItem('foods');
+        workouts.length = 0;
+        foods.length = 0;
+        renderWorkouts();
+        renderFoods();
+        updateSummary();
+      }
+    });
+
+    renderWorkouts();
+    renderFoods();
+    updateSummary();
+  </script>
+</body>
+</html>
